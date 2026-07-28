@@ -1,0 +1,16 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+npm-debug.log*
+.vscode/*
+!.vscode/extensions.json
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Tauri / Rust
+src-tauri/target
+src-tauri/gen
+Cargo.lock.bak

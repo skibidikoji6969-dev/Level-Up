@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PROGRESS//OS</title>
+    <!--
+      Intentionally no external font <link> here. This was the app's only
+      network request; removing it makes the desktop build 100% offline.
+      tailwind.config.js already falls back to system sans-serif/monospace
+      fonts. To restore the exact Chakra Petch / Inter / JetBrains Mono look,
+      self-host the .woff2 files (see README "Fonts" section) instead of
+      linking fonts.googleapis.com.
+    -->
+  </head>
+  <body class="bg-void text-white font-body antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
