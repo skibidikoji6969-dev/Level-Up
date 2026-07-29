@@ -189,3 +189,4 @@ Colors are defined once in `tailwind.config.js` (`electric`, `violet`, `neon`, `
 color scales). The in-app **Settings → Theme Colors** panel stores your preferred hex
 values in IndexedDB for reference, but Tailwind classes are compiled at build time — to
 make a color change actually render, edit `tailwind.config.js` and restart `npm run dev`.
+"# Level-Up---v1.5" 
