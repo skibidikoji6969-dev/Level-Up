@@ -1,9 +1,35 @@
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import GlassCard from '@/components/ui/GlassCard';
 import { db } from '@/db/database';
+import { updateExamDate, resetAcademicProgress, generateSyllabusForGoal } from '@/lib/actions';
+import type { AcademicGoalType } from '@/types';
+
+const GOAL_OPTIONS: { id: AcademicGoalType; label: string }[] = [
+  { id: 'jee_main', label: 'JEE Main' },
+  { id: 'jee_advanced', label: 'JEE Advanced' },
+  { id: 'neet', label: 'NEET' },
+  { id: 'class_11', label: 'Class 11' },
+  { id: 'class_12', label: 'Class 12' },
+  { id: 'custom', label: 'Custom Goal' },
+];
+
+const GOAL_LABELS: Record<string, string> = {
+  jee_main: 'JEE Main',
+  jee_advanced: 'JEE Advanced',
+  neet: 'NEET',
+  class_11: 'Class 11',
+  class_12: 'Class 12',
+  custom: 'Custom Goal',
+};
 
 export default function Settings() {
   const settings = useLiveQuery(() => db.settings.get('settings'), []);
+  const academicProfile = useLiveQuery(() => db.academicProfile.get('academic'), []);
+  const [confirmingReset, setConfirmingReset] = useState(false);
+  const [pendingGoal, setPendingGoal] = useState<AcademicGoalType | null>(null);
+  const [pendingCustomName, setPendingCustomName] = useState('');
+  const [confirmingGoalChange, setConfirmingGoalChange] = useState(false);
 
   if (!settings) return null;
 
@@ -11,12 +37,121 @@ export default function Settings() {
     await db.settings.update('settings', { [field]: value });
   }
 
+  async function handleResetAcademic() {
+    if (!confirmingReset) {
+      setConfirmingReset(true);
+      return;
+    }
+    await resetAcademicProgress();
+    setConfirmingReset(false);
+  }
+
+  async function handleConfirmGoalChange() {
+    if (!pendingGoal || !academicProfile) return;
+    if (!confirmingGoalChange) {
+      setConfirmingGoalChange(true);
+      return;
+    }
+    await generateSyllabusForGoal(pendingGoal, academicProfile.examDate, pendingCustomName.trim() || undefined);
+    setPendingGoal(null);
+    setPendingCustomName('');
+    setConfirmingGoalChange(false);
+  }
+
+  const goalLabel = academicProfile
+    ? academicProfile.goal === 'custom'
+      ? academicProfile.customGoalName || 'Custom Goal'
+      : GOAL_LABELS[academicProfile.goal ?? ''] ?? 'Not set'
+    : 'Not set';
+
   return (
     <div className="space-y-6 max-w-2xl">
       <header>
         <h1 className="font-display text-2xl md:text-3xl font-bold">Settings</h1>
         <p className="text-white/40 text-sm mt-1">Tune the system to how you actually work.</p>
       </header>
+
+      {academicProfile && (
+        <GlassCard glow="green">
+          <h2 className="font-display text-sm uppercase tracking-widest text-white/50 mb-4">Academic</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-white/40 uppercase tracking-wide">Goal</label>
+              <div className="w-full mt-1 bg-void-300/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/70">
+                {goalLabel}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-white/[0.06]">
+              <label className="text-xs text-white/40 uppercase tracking-wide">Change Goal</label>
+              <p className="text-[11px] text-white/30 mt-0.5 mb-2">
+                Switching regenerates your syllabus (Physics/Chemistry/etc. chapters in Study Tracker) for the new
+                goal. Your study sessions, XP, and any manually-added subjects are not affected.
+              </p>
+              <select
+                value={pendingGoal ?? ''}
+                onChange={(e) => {
+                  setPendingGoal((e.target.value || null) as AcademicGoalType | null);
+                  setConfirmingGoalChange(false);
+                }}
+                className="w-full bg-void-300/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm outline-none focus:border-electric/40"
+              >
+                <option value="">Select a new goal…</option>
+                {GOAL_OPTIONS.map((g) => (
+                  <option key={g.id} value={g.id}>{g.label}</option>
+                ))}
+              </select>
+
+              {pendingGoal === 'custom' && (
+                <input
+                  type="text"
+                  value={pendingCustomName}
+                  onChange={(e) => setPendingCustomName(e.target.value)}
+                  placeholder="Goal name"
+                  className="w-full mt-2 bg-void-300/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm outline-none focus:border-electric/40"
+                />
+              )}
+
+              {pendingGoal && (
+                <button
+                  onClick={handleConfirmGoalChange}
+                  onBlur={() => setConfirmingGoalChange(false)}
+                  className={`mt-2 text-xs font-medium px-3 py-2 rounded-lg border transition-colors ${
+                    confirmingGoalChange
+                      ? 'bg-red-500/20 border-red-500/40 text-red-300'
+                      : 'bg-electric/15 border-electric/40 text-electric hover:shadow-glow-blue'
+                  }`}
+                >
+                  {confirmingGoalChange ? 'Click again to confirm — regenerates your syllabus' : 'Update Goal'}
+                </button>
+              )}
+            </div>
+
+            <div>
+              <label className="text-xs text-white/40 uppercase tracking-wide">Exam Date</label>
+              <input
+                type="date"
+                value={academicProfile.examDate ?? ''}
+                onChange={(e) => updateExamDate(e.target.value || null)}
+                className="w-full mt-1 bg-void-300/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm outline-none focus:border-electric/40"
+              />
+            </div>
+            <div className="pt-2 border-t border-white/[0.06]">
+              <button
+                onClick={handleResetAcademic}
+                onBlur={() => setConfirmingReset(false)}
+                className={`text-xs font-medium px-3 py-2 rounded-lg border transition-colors ${
+                  confirmingReset
+                    ? 'bg-red-500/20 border-red-500/40 text-red-300'
+                    : 'bg-white/[0.04] border-white/[0.08] text-white/50 hover:text-white/80'
+                }`}
+              >
+                {confirmingReset ? 'Click again to confirm — this wipes your syllabus & goal' : 'Reset Academic Progress'}
+              </button>
+            </div>
+          </div>
+        </GlassCard>
+      )}
 
       <GlassCard glow="blue">
         <h2 className="font-display text-sm uppercase tracking-widest text-white/50 mb-4">XP & Leveling</h2>

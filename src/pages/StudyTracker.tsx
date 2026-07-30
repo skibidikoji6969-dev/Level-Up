@@ -7,6 +7,7 @@ import { db } from '@/db/database';
 import { createSubject, createTopic, logStudySession, setTopicStatus, updateTopic, logRevision, logMockTest } from '@/lib/actions';
 import type { Topic, TopicStatus } from '@/types';
 import { formatMinutes } from '@/lib/stats';
+import TopicDetailModal from '@/components/TopicDetailModal';
 
 const SUBJECT_COLORS = ['#3B82F6', '#A855F7', '#39FF88', '#F97316', '#EC4899', '#06B6D4', '#EAB308'];
 
@@ -165,8 +166,10 @@ function TopicPanel({
   onClose: () => void;
 }) {
   const [newTopic, setNewTopic] = useState('');
+  const [detailTopicId, setDetailTopicId] = useState<string | null>(null);
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -217,43 +220,73 @@ function TopicPanel({
 
         <div className="space-y-2">
           {topics.length === 0 && <div className="text-white/30 text-sm text-center py-6">No topics yet.</div>}
-          {topics.map((t) => (
-            <div key={t.id} className="rounded-xl bg-void-300/40 border border-white/[0.06] p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">{t.name}</span>
-                <select
-                  value={t.status}
-                  onChange={(e) => setTopicStatus(t.id, e.target.value as TopicStatus)}
-                  className="text-xs bg-void-400 border border-white/[0.08] rounded-md px-2 py-1 outline-none"
-                  style={{ color: STATUS_META[t.status].color }}
-                >
-                  {Object.entries(STATUS_META).map(([k, v]) => (
-                    <option key={k} value={k}>{v.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-white/40">
-                <span>{formatMinutes(t.timeSpentMin)}</span>
-                <span>·</span>
-                <span>{t.questionsSolved} Qs</span>
-                <span>·</span>
-                <span className="flex-1">
+          {topics.map((t) => {
+            const completion = t.completionPct ?? 0;
+            return (
+              <div
+                key={t.id}
+                onClick={() => setDetailTopicId(t.id)}
+                className="rounded-xl bg-void-300/40 border border-white/[0.06] p-3 cursor-pointer hover:border-white/20 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">{t.name}</span>
+                  <select
+                    value={t.status}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => setTopicStatus(t.id, e.target.value as TopicStatus)}
+                    className="text-xs bg-void-400 border border-white/[0.08] rounded-md px-2 py-1 outline-none"
+                    style={{ color: STATUS_META[t.status].color }}
+                  >
+                    {Object.entries(STATUS_META).map(([k, v]) => (
+                      <option key={k} value={k}>{v.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="h-1.5 rounded-full bg-void-400 overflow-hidden mb-2">
+                  <div className="h-full rounded-full bg-electric transition-all" style={{ width: `${completion}%` }} />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/40 mb-2">
+                  <span>{completion}% complete</span>
+                  <span>·</span>
+                  <span>{formatMinutes(t.timeSpentMin)}</span>
+                  <span>·</span>
+                  <span>{t.questionsSolved} Qs</span>
+                  <span>·</span>
+                  <span>{t.revisionCount ?? 0} revisions</span>
+                  {t.nextRevision && (
+                    <>
+                      <span>·</span>
+                      <span>Next: {t.nextRevision}</span>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="range"
                     min={0}
                     max={100}
                     value={t.confidence}
                     onChange={(e) => updateTopic(t.id, { confidence: Number(e.target.value) })}
-                    className="w-full accent-electric"
+                    className="flex-1 accent-electric"
                   />
-                </span>
-                <span className="font-mono text-white/60 w-10 text-right">{t.confidence}%</span>
+                  <span className="font-mono text-white/60 w-10 text-right text-xs">{t.confidence}%</span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </motion.div>
     </motion.div>
+
+      <AnimatePresence>
+        {detailTopicId && (
+          <TopicDetailModal topicId={detailTopicId} subjectColor={subjectColor} onClose={() => setDetailTopicId(null)} />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

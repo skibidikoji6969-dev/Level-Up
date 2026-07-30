@@ -19,11 +19,13 @@ import {
   Command,
   ClipboardList,
   Gauge,
+  GraduationCap,
 } from 'lucide-react';
 import { useUIStore } from '@/store/useUIStore';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/academic', label: 'Academic', icon: GraduationCap },
   { to: '/character', label: 'Character', icon: Swords },
   { to: '/study', label: 'Study', icon: BookOpen },
   { to: '/heatmap', label: 'Heatmap', icon: CalendarDays },

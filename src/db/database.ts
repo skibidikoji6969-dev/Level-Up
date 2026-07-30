@@ -10,6 +10,9 @@ import type {
   Goal,
   Achievement,
   AppSettings,
+  AcademicProfile,
+  AcademicChapter,
+  TopicRevision,
 } from '@/types';
 
 // ============================================================
@@ -27,6 +30,11 @@ export class ProgressDB extends Dexie {
   goals!: Table<Goal, string>;
   achievements!: Table<Achievement, string>;
   settings!: Table<AppSettings, string>;
+  // Sprint 1 — Academic Intelligence
+  academicProfile!: Table<AcademicProfile, string>;
+  /** @deprecated kept only to avoid dropping any data written by an earlier build; unused going forward. */
+  academicChapters!: Table<AcademicChapter, string>;
+  topicRevisions!: Table<TopicRevision, string>;
 
   constructor() {
     super('progress-os-db');
@@ -41,6 +49,24 @@ export class ProgressDB extends Dexie {
       goals: 'id, period, completed',
       achievements: 'id, unlockedAt',
       settings: 'id',
+    });
+
+    // Sprint 1: additive migration only. Existing v1 stores/data are left
+    // completely untouched — Dexie carries forward any table definition
+    // that isn't redeclared here.
+    this.version(2).stores({
+      academicProfile: 'id',
+      academicChapters: 'id, goal, subjectName, chapterName, status, nextRevision',
+    });
+
+    // Sprint 1 fixes: syllabus chapters now live as real Subject/Topic rows
+    // (see lib/actions.ts#generateSyllabusForGoal) instead of a separate
+    // academicChapters table. We do NOT delete academicChapters here —
+    // deleting a store in a Dexie migration is unnecessary risk for a
+    // table nothing reads anymore, and the instruction is "never delete
+    // existing user data." We only add the new revision-history table.
+    this.version(3).stores({
+      topicRevisions: 'id, topicId, date',
     });
   }
 }
