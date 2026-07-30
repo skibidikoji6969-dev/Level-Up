@@ -208,7 +208,10 @@ export function computeAcademicAnalytics(subjects: Subject[], topics: Topic[]): 
     };
   }
 
-  const subjectReadiness = computeSubjectReadiness(withSubject, (t) => t.subjectName);
+  const subjectReadiness = computeSubjectReadiness(
+  withSubject,
+  (t) => subjectNameById.get(t.subjectId) ?? 'Unknown'
+);
   const overallReadiness = computeOverallReadiness(withSubject);
 
   const weakestSubject = subjectReadiness.reduce((min, s) => (s.readiness < min.readiness ? s : min), subjectReadiness[0]);
