@@ -13,6 +13,7 @@ import type {
   AcademicProfile,
   AcademicChapter,
   TopicRevision,
+  PlannerSlot,
 } from '@/types';
 
 // ============================================================
@@ -35,6 +36,8 @@ export class ProgressDB extends Dexie {
   /** @deprecated kept only to avoid dropping any data written by an earlier build; unused going forward. */
   academicChapters!: Table<AcademicChapter, string>;
   topicRevisions!: Table<TopicRevision, string>;
+  // Sprint 2 — Smart Slot Planner
+  plannerSlots!: Table<PlannerSlot, string>;
 
   constructor() {
     super('progress-os-db');
@@ -67,6 +70,13 @@ export class ProgressDB extends Dexie {
     // existing user data." We only add the new revision-history table.
     this.version(3).stores({
       topicRevisions: 'id, topicId, date',
+    });
+
+    // Sprint 2: additive migration only, one new table. Energy-by-time-of-
+    // day preferences live as optional fields on the existing `settings`
+    // singleton (no index needed), so no schema change for that part.
+    this.version(4).stores({
+      plannerSlots: 'id, date, status, subjectId, topicId',
     });
   }
 }

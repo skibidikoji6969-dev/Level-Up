@@ -7,6 +7,7 @@ import { db, todayISO } from '@/db/database';
 import { createTask, toggleTaskDone, deleteTask, incrementPomodoro } from '@/lib/actions';
 import type { TaskCategory, TaskPriority } from '@/types';
 import PomodoroTimer from '@/components/PomodoroTimer';
+import SlotPlanner from '@/components/SlotPlanner';
 
 const PRIORITY_META: Record<TaskPriority, { color: string; label: string }> = {
   low: { color: '#6B7280', label: 'Low' },
@@ -25,6 +26,7 @@ const CATEGORY_LABEL: Record<TaskCategory, string> = {
 
 export default function Planner() {
   const today = todayISO();
+  const [view, setView] = useState<'tasks' | 'slots'>('tasks');
   const tasks = useLiveQuery(() => db.tasks.where('date').equals(today).toArray(), [today]) ?? [];
   const [showAdd, setShowAdd] = useState(false);
   const [activeTimerTask, setActiveTimerTask] = useState<string | null>(null);
@@ -42,14 +44,35 @@ export default function Planner() {
           <h1 className="font-display text-2xl md:text-3xl font-bold">Daily Planner</h1>
           <p className="text-white/40 text-sm mt-1">{today} · {done.length}/{tasks.length} complete</p>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-electric/15 border border-electric/40 text-electric text-sm font-medium hover:shadow-glow-blue transition-all"
-        >
-          <Plus size={15} /> Add Task
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 bg-void-300/50 border border-white/[0.08] rounded-xl p-1">
+            <button
+              onClick={() => setView('tasks')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${view === 'tasks' ? 'bg-electric/20 text-electric' : 'text-white/40'}`}
+            >
+              Tasks
+            </button>
+            <button
+              onClick={() => setView('slots')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${view === 'slots' ? 'bg-electric/20 text-electric' : 'text-white/40'}`}
+            >
+              Time Slots
+            </button>
+          </div>
+          {view === 'tasks' && (
+            <button
+              onClick={() => setShowAdd(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-electric/15 border border-electric/40 text-electric text-sm font-medium hover:shadow-glow-blue transition-all"
+            >
+              <Plus size={15} /> Add Task
+            </button>
+          )}
+        </div>
       </header>
 
+      {view === 'slots' ? (
+        <SlotPlanner />
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-3">
           <AnimatePresence>
@@ -122,8 +145,11 @@ export default function Planner() {
           <PomodoroTimer taskId={activeTimerTask} onComplete={() => activeTimerTask && incrementPomodoro(activeTimerTask)} />
         </div>
       </div>
+      )}
 
-      <AnimatePresence>{showAdd && <AddTaskModal onClose={() => setShowAdd(false)} />}</AnimatePresence>
+      {view === 'tasks' && (
+        <AnimatePresence>{showAdd && <AddTaskModal onClose={() => setShowAdd(false)} />}</AnimatePresence>
+      )}
     </div>
   );
 }

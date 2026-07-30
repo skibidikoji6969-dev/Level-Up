@@ -135,10 +135,7 @@ export interface SubjectReadiness {
   chapterCount: number;
 }
 
-export function computeSubjectReadiness<T extends Topic>(
-  topics: T[],
-  subjectNameOf: (t: T) => string
-): SubjectReadiness[] {
+export function computeSubjectReadiness(topics: Topic[], subjectNameOf: (t: Topic) => string): SubjectReadiness[] {
   const bySubject = new Map<string, Topic[]>();
   for (const t of topics) {
     const name = subjectNameOf(t);
